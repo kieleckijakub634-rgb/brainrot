@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BrainrotAI — twórz filmiki AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Bebas+Neue&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
+    }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: #0a0a0a;
+      color: #f0f0f0;
+      min-height: 100vh;
+      overflow-x: hidden
+    }
+
+    .marquee-wrap {
+      background: #D4537E;
+      padding: 8px 0;
+      overflow: hidden;
+      white-space: nowrap
+    }
+
+    .marquee-inner {
+      display: inline-block;
+      animation: scroll 18s linear infinite;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      color: #fff
+    }
+
+    @keyframes scroll {
+      0% {
+        transform: translateX(0)
+      }
+
+      100% {
+        transform: translateX(-50%)
+      }
+    }
+
+    /* LOGIN MODAL */
+    .modal-bg {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 100;
+      align-items: center;
+      justify-content: center
+    }
+
+    .modal-bg.active {
+      display: flex
+    }
+
+    .modal {
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 16px;
+      padding: 32px;
+      width: 100%;
+      max-width: 360px;
+      text-align: center
+    }
+
+    .modal h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      margin-bottom: 8px
+    }
+
+    .modal p {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 24px
+    }
+
+    .modal input {
+      width: 100%;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: #f0f0f0;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 14px;
+      outline: none;
+      margin-bottom: 12px
+    }
+
+    .modal input:focus {
+      border-color: #D4537E
+    }
+
+    .modal-btn {
+      width: 100%;
+      padding: 13px;
+      background: #D4537E;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      cursor: pointer;
+      letter-spacing: 0.05em
+    }
+
+    .modal-btn:hover {
+      background: #c04470
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 20px;
+      cursor: pointer
+    }
+
+    .modal-success {
+      display: none;
+      padding: 16px;
+      background: #0a1f0a;
+      border: 1px solid #1a4a1a;
+      border-radius: 8px;
+      color: #5fc75f;
+      font-size: 13px;
+      margin-top: 12px
+    }
+
+    /* NAV */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 32px;
+      border-bottom: 1px solid #1a1a1a
+    }
+
+    .nav-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      color: #f0f0f0;
+      letter-spacing: 0.05em
+    }
+
+    .nav-logo span {
+      color: #D4537E
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 12px
+    }
+
+    .nav-user {
+      font-size: 13px;
+      color: #888
+    }
+
+    .btn-login {
+      background: transparent;
+      border: 1px solid #2a2a2a;
+      color: #f0f0f0;
+      padding: 8px 18px;
+      border-radius: 100px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+      transition: border-color 0.15s
+    }
+
+    .btn-login:hover {
+      border-color: #D4537E
+    }
+
+    .btn-logout {
+      background: transparent;
+      border: none;
+      color: #555;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: 'Space Grotesk', sans-serif
+    }
+
+    .btn-logout:hover {
+      color: #f0f0f0
+    }
+
+    /* HERO */
+    .hero {
+      padding: 56px 32px 40px;
+      text-align: center;
+      max-width: 700px;
+      margin: 0 auto
+    }
+
+    .hero-tag {
+      display: inline-block;
+      background: #1a1a1a;
+      border: 1px solid #D4537E;
+      color: #D4537E;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      padding: 5px 14px;
+      border-radius: 4px;
+      margin-bottom: 24px;
+      text-transform: uppercase
+    }
+
+    h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(56px, 10vw, 100px);
+      line-height: 0.95;
+      color: #f0f0f0;
+      margin-bottom: 16px
+    }
+
+    h1 .accent {
+      color: #D4537E
+    }
+
+    .sub {
+      font-size: 15px;
+      color: #888;
+      margin-bottom: 36px;
+      line-height: 1.6;
+      font-weight: 300
+    }
+
+    /* CREATOR */
+    .creator-box {
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 16px;
+      padding: 28px;
+      max-width: 620px;
+      margin: 0 auto 48px;
+      text-align: left
+    }
+
+    .step-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px
+    }
+
+    .step-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #D4537E;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0
+    }
+
+    .step-label {
+      font-size: 13px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.06em
+    }
+
+    .vibes {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 20px
+    }
+
+    .vibe-btn {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      padding: 12px 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: 'Space Grotesk', sans-serif
+    }
+
+    .vibe-btn:hover,
+    .vibe-btn.active {
+      border-color: #D4537E;
+      background: #1f1218
+    }
+
+    .vibe-btn.active .vibe-name {
+      color: #D4537E
+    }
+
+    .vibe-icon {
+      font-size: 22px;
+      display: block;
+      margin-bottom: 4px
+    }
+
+    .vibe-name {
+      font-size: 11px;
+      color: #aaa;
+      font-weight: 500
+    }
+
+    .topics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 20px
+    }
+
+    .topic-chip {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      color: #aaa;
+      font-size: 12px;
+      padding: 6px 14px;
+      border-radius: 100px;
+      cursor: pointer;
+      font-family: 'Space Grotesk', sans-serif;
+      transition: all 0.12s
+    }
+
+    .topic-chip:hover,
+    .topic-chip.active {
+      border-color: #D4537E;
+      color: #D4537E;
+      background: #1f1218
+    }
+
+    .prompt-area textarea {
+      width: 100%;
+      background: #161616;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: #f0f0f0;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 14px;
+      resize: none;
+      height: 80px;
+      outline: none;
+      transition: border-color 0.15s;
+      margin-bottom: 16px
+    }
+
+    .prompt-area textarea:focus {
+      border-color: #D4537E
+    }
+
+    .prompt-area textarea::placeholder {
+      color: #444
+    }
+
+    .settings-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 24px
+    }
+
+    .setting {
+      display: flex;
+      flex-direction: column;
+      gap: 6px
+    }
+
+    .setting label {
+      font-size: 11px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.06em
+    }
+
+    .setting select {
+      background: #161616;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: #f0f0f0;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px;
+      outline: none
+    }
+
+    .generate-btn {
+      width: 100%;
+      padding: 16px;
+      background: #D4537E;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      transition: all 0.15s
+    }
+
+    .generate-btn:hover {
+      background: #c04470;
+      transform: translateY(-1px)
+    }
+
+    .generate-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none
+    }
+
+    .progress-wrap {
+      display: none;
+      margin-top: 16px
+    }
+
+    .progress-bar {
+      height: 3px;
+      background: #1a1a1a;
+      border-radius: 2px;
+      margin-bottom: 8px
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #D4537E;
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.4s
+    }
+
+    .progress-label {
+      font-size: 12px;
+      color: #555;
+      text-align: center
+    }
+
+    .limit-info {
+      text-align: center;
+      font-size: 12px;
+      color: #555;
+      margin-top: 12px
+    }
+
+    .limit-info span {
+      color: #D4537E;
+      font-weight: 500
+    }
+
+    /* PLANS */
+    .plans-section {
+      padding: 0 32px 48px;
+      max-width: 720px;
+      margin: 0 auto
+    }
+
+    .section-label {
+      font-size: 11px;
+      color: #444;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 16px;
+      text-align: center
+    }
+
+    .plans-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px
+    }
+
+    .plan {
+      background: #111;
+      border: 1px solid #1e1e1e;
+      border-radius: 14px;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column
+    }
+
+    .plan.hot {
+      border-color: #D4537E
+    }
+
+    .plan-tag {
+      font-size: 10px;
+      color: #D4537E;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+      font-weight: 700
+    }
+
+    .plan-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      color: #f0f0f0;
+      line-height: 1;
+      margin-bottom: 2px
+    }
+
+    .plan-price {
+      font-size: 22px;
+      font-weight: 700;
+      color: #f0f0f0;
+      margin-bottom: 4px
+    }
+
+    .plan-price small {
+      font-size: 13px;
+      font-weight: 400;
+      color: #555
+    }
+
+    .plan-desc {
+      font-size: 12px;
+      color: #555;
+      margin-bottom: 16px;
+      line-height: 1.5;
+      border-bottom: 1px solid #1e1e1e;
+      padding-bottom: 16px
+    }
+
+    .plan-feats {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex: 1
+    }
+
+    .plan-feats li {
+      font-size: 12px;
+      color: #888;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px
+    }
+
+    .plan-feats li i {
+      color: #D4537E;
+      font-size: 13px;
+      flex-shrink: 0;
+      margin-top: 1px
+    }
+
+    .plan-feats li.off {
+      color: #333
+    }
+
+    .plan-feats li.off i {
+      color: #2a2a2a
+    }
+
+    .plan-cta {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid #2a2a2a;
+      background: transparent;
+      color: #888;
+      transition: all 0.15s
+    }
+
+    .plan-cta:hover {
+      background: #1a1a1a;
+      color: #f0f0f0
+    }
+
+    .plan.hot .plan-cta {
+      background: #D4537E;
+      color: #fff;
+      border-color: #D4537E
+    }
+
+    .plan.hot .plan-cta:hover {
+      background: #c04470
+    }
+
+    footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 11px;
+      color: #333;
+      border-top: 1px solid #161616
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- LOGIN MODAL -->
+  <div class="modal-bg" id="modal-bg">
+    <div class="modal" style="position:relative">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <h2>DOŁĄCZ <span style="color:#D4537E">TERAZ</span></h2>
+      <p>Wpisz email — wyślemy Ci link do logowania. Zero hasła, zero stresu.</p>
+      <input type="email" id="modal-email" placeholder="twoj@email.pl">
+      <button class="modal-btn" onclick="doLogin()">WYŚLIJ LINK</button>
+      <div class="modal-success" id="modal-success">
+        Sprawdź skrzynkę! Link do logowania już leci ✓
+      </div>
+    </div>
+  </div>
+
+  <!-- MARQUEE -->
+  <div class="marquee-wrap" aria-hidden="true">
+    <span class="marquee-inner">BRAINROT VIDEO GENERATOR &nbsp;&bull;&nbsp; RIZZ YOUR CONTENT &nbsp;&bull;&nbsp; NO CAP
+      &nbsp;&bull;&nbsp; SIGMA GRINDSET ONLY &nbsp;&bull;&nbsp; SKIBIDI CERTIFIED &nbsp;&bull;&nbsp; OHIO APPROVED
+      &nbsp;&bull;&nbsp; ABSOLUTE W &nbsp;&bull;&nbsp; BRAINROT VIDEO GENERATOR &nbsp;&bull;&nbsp; RIZZ YOUR CONTENT
+      &nbsp;&bull;&nbsp; NO CAP &nbsp;&bull;&nbsp; SIGMA GRINDSET ONLY &nbsp;&bull;&nbsp; SKIBIDI CERTIFIED
+      &nbsp;&bull;&nbsp; OHIO APPROVED &nbsp;&bull;&nbsp; ABSOLUTE W &nbsp;&bull;&nbsp;</span>
+  </div>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-logo">Brainrot<span>AI</span></div>
+    <div class="nav-right">
+      <span class="nav-user" id="nav-user"></span>
+      <button class="btn-login" id="btn-login-nav" onclick="openModal()">Zaloguj się</button>
+      <button class="btn-logout" id="btn-logout" style="display:none" onclick="doLogout()">Wyloguj</button>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-tag">100% sigma certified</div>
+    <h1>tworz <span class="accent">brainrot</span> filmiki</h1>
+    <p class="sub">Wpisz temat, wybierz vibe, kliknij generuj. AI robi resztę. No cap.</p>
+  </section>
+
+  <!-- CREATOR -->
+  <div class="creator-box">
+    <div class="step-row">
+      <div class="step-num">1</div><span class="step-label">Wybierz vibe</span>
+    </div>
+    <div class="vibes" id="vibes">
+      <div class="vibe-btn active" data-v="subway"><span class="vibe-icon">🚇</span><span class="vibe-name">Subway
+          Surfers</span></div>
+      <div class="vibe-btn" data-v="minecraft"><span class="vibe-icon">⛏️</span><span class="vibe-name">Minecraft</span>
+      </div>
+      <div class="vibe-btn" data-v="rizzler"><span class="vibe-icon">😏</span><span class="vibe-name">Rizzler
+          mode</span></div>
+      <div class="vibe-btn" data-v="ohio"><span class="vibe-icon">🌀</span><span class="vibe-name">Only in Ohio</span>
+      </div>
+      <div class="vibe-btn" data-v="sigma"><span class="vibe-icon">🐺</span><span class="vibe-name">Sigma grind</span>
+      </div>
+      <div class="vibe-btn" data-v="skibidi"><span class="vibe-icon">🚽</span><span class="vibe-name">Skibidi</span>
+      </div>
+    </div>
+
+    <div class="step-row">
+      <div class="step-num">2</div><span class="step-label">Wybierz temat</span>
+    </div>
+    <div class="topics" id="topics">
+      <div class="topic-chip active" data-t="motivacja">Motywacja</div>
+      <div class="topic-chip" data-t="historia">Ciekawa historia</div>
+      <div class="topic-chip" data-t="hack">Life hack</div>
+      <div class="topic-chip" data-t="nauka">Nauka</div>
+      <div class="topic-chip" data-t="gaming">Gaming</div>
+    </div>
+
+    <div class="step-row">
+      <div class="step-num">3</div><span class="step-label">Opisz o czym ma być</span>
+    </div>
+    <div class="prompt-area">
+      <textarea id="prompt" placeholder="np. dlaczego Platon był sigma male..."></textarea>
+    </div>
+
+    <div class="settings-row">
+      <div class="setting">
+        <label>Długość</label>
+        <select id="dur">
+          <option>30 sekund</option>
+          <option selected>60 sekund</option>
+          <option>90 sekund</option>
+        </select>
+      </div>
+      <div class="setting">
+        <label>Język</label>
+        <select id="lang">
+          <option selected>Polski</option>
+          <option>Angielski</option>
+          <option>Ponglish</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="generate-btn" id="gen-btn" onclick="handleGenerate()">GENERUJ FILM</button>
+    <div class="progress-wrap" id="prog">
+      <div class="progress-bar">
+        <div class="progress-fill" id="prog-fill"></div>
+      </div>
+      <div class="progress-label" id="prog-label">Inicjalizowanie AI...</div>
+    </div>
+    <div class="limit-info" id="limit-info"></div>
+  </div>
+
+  <!-- PLANS -->
+  <section class="plans-section">
+    <p class="section-label">Wybierz plan</p>
+    <div class="plans-grid">
+      <div class="plan">
+        <div class="plan-tag">starter</div>
+        <div class="plan-name">Basic</div>
+        <div class="plan-price">49<small> zł/mies.</small></div>
+        <div class="plan-desc">Dla tych co dopiero zaczynają sigma grind.</div>
+        <ul class="plan-feats">
+          <li><i class="ti ti-check"></i>10 filmów/mies.</li>
+          <li><i class="ti ti-check"></i>6 vibów</li>
+          <li><i class="ti ti-check"></i>Do 60 sek.</li>
+          <li class="off"><i class="ti ti-x"></i>Bez znaku wodnego</li>
+          <li class="off"><i class="ti ti-x"></i>Custom muzyka</li>
+        </ul>
+        <button class="plan-cta">Wybieram</button>
+      </div>
+      <div class="plan hot">
+        <div class="plan-tag">W rizz</div>
+        <div class="plan-name">Pro</div>
+        <div class="plan-price">99<small> zł/mies.</small></div>
+        <div class="plan-desc">No cap najlepszy wybór. Absolutne W.</div>
+        <ul class="plan-feats">
+          <li><i class="ti ti-check"></i>40 filmów/mies.</li>
+          <li><i class="ti ti-check"></i>Wszystkie viby</li>
+          <li><i class="ti ti-check"></i>Do 90 sek.</li>
+          <li><i class="ti ti-check"></i>Bez znaku wodnego</li>
+          <li class="off"><i class="ti ti-x"></i>Custom muzyka</li>
+        </ul>
+        <button class="plan-cta">Wybieram</button>
+      </div>
+      <div class="plan">
+        <div class="plan-tag">gigachad</div>
+        <div class="plan-name">Premium</div>
+        <div class="plan-price">199<small> zł/mies.</small></div>
+        <div class="plan-desc">Dla prawdziwego gigachada. Bez limitów.</div>
+        <ul class="plan-feats">
+          <li><i class="ti ti-check"></i>Nielimitowane</li>
+          <li><i class="ti ti-check"></i>Własna muzyka</li>
+          <li><i class="ti ti-check"></i>Do 3 min.</li>
+          <li><i class="ti ti-check"></i>Bez znaku wodnego</li>
+          <li><i class="ti ti-check"></i>Priorytet renderowania</li>
+        </ul>
+        <button class="plan-cta">Wybieram</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>no cap, no L, only W &nbsp;&bull;&nbsp; kontakt@brainrotai.pl</footer>
+
+  <script>
+    // =====================
+    // SUPABASE KONFIGURACJA
+    // =====================
+    const { createClient } = supabase;
+    const sb = createClient(
+      'fnfvlchgnnfdmaywhski',
+      'sb_publishable_-fcmTxnCHu2GoiMW56b2OQ_uXfT5aQ0'
+    );
+
+    // =====================
+    // AUTH
+    // =====================
+    let currentUser = null;
+
+    sb.auth.onAuthStateChange((event, session) => {
+      currentUser = session ? session.user : null;
+      updateNavUI();
+    });
+
+    function updateNavUI() {
+      const navUser = document.getElementById('nav-user');
+      const btnLogin = document.getElementById('btn-login-nav');
+      const btnLogout = document.getElementById('btn-logout');
+      const limitInfo = document.getElementById('limit-info');
+
+      if (currentUser) {
+        navUser.textContent = currentUser.email;
+        btnLogin.style.display = 'none';
+        btnLogout.style.display = 'inline';
+        limitInfo.innerHTML = 'Plan: <span>Basic</span> — 0/10 filmów wykorzystanych';
+      } else {
+        navUser.textContent = '';
+        btnLogin.style.display = 'inline';
+        btnLogout.style.display = 'none';
+        limitInfo.textContent = '';
+      }
+    }
+
+    async function doLogin() {
+      const email = document.getElementById('modal-email').value;
+      if (!email) return;
+      const { error } = await sb.auth.signInWithOtp({ email });
+      if (!error) {
+        document.getElementById('modal-success').style.display = 'block';
+      }
+    }
+
+    async function doLogout() {
+      await sb.auth.signOut();
+    }
+
+    function openModal() {
+      document.getElementById('modal-bg').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('modal-bg').classList.remove('active');
+      document.getElementById('modal-success').style.display = 'none';
+    }
+
+    // =====================
+    // VIBY I TEMATY
+    // =====================
+    document.querySelectorAll('.vibe-btn').forEach(b => {
+      b.onclick = () => {
+        document.querySelectorAll('.vibe-btn').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+      };
+    });
+
+    const prompts = {
+      motivacja: 'sigma grindset — 5 zasad prawdziwego alpha...',
+      historia: 'ciekawa historia, której nie uczą w szkole...',
+      hack: 'life hack który zmieni twoje życie na zawsze...',
+      nauka: 'wytłumacz fizykę kwantową po brainrot...',
+      gaming: 'najlepsze gry wszech czasów ranked tier list...'
+    };
+
+    document.querySelectorAll('.topic-chip').forEach(c => {
+      c.onclick = () => {
+        document.querySelectorAll('.topic-chip').forEach(x => x.classList.remove('active'));
+        c.classList.add('active');
+        if (prompts[c.dataset.t]) document.getElementById('prompt').value = prompts[c.dataset.t];
+      };
+    });
+
+    // =====================
+    // GENEROWANIE
+    // =====================
+    const steps = ['Inicjalizowanie AI...', 'Analizowanie vibu...', 'Piszemy skrypt...', 'Generujemy narrację...', 'Dodajemy gameplay...', 'Synchronizacja dźwięku...', 'Finalizowanie...', 'Gotowe! W rizz!'];
+
+    function handleGenerate() {
+      if (!currentUser) {
+        openModal();
+        return;
+      }
+      startGenerate();
+    }
+
+    function startGenerate() {
+      const btn = document.getElementById('gen-btn');
+      const prog = document.getElementById('prog');
+      const fill = document.getElementById('prog-fill');
+      const lbl = document.getElementById('prog-label');
+      btn.disabled = true;
+      prog.style.display = 'block';
+      let i = 0;
+      const interval = setInterval(() => {
+        if (i >= steps.length) {
+          clearInterval(interval);
+          btn.disabled = false;
+          btn.textContent = 'GENERUJ KOLEJNY';
+          return;
+        }
+        fill.style.width = Math.round((i + 1) / steps.length * 100) + '%';
+        lbl.textContent = steps[i];
+        i++;
+      }, 700);
+    }
+  </script>
+</body>
+
+</html>
