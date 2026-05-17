@@ -674,10 +674,98 @@
       position: relative;
     }
 
-    .vibe-preview-video iframe {
+    .vibe-preview-video iframe,
+    .vibe-preview-video video {
       width: 100%;
       height: 100%;
       border: none;
+      display: block;
+      object-fit: cover;
+    }
+
+    .vibe-preview-video video {
+      display: none;
+    }
+
+    .upload-zone {
+      margin-top: 12px;
+      border: 1.5px dashed #2a2a2a;
+      border-radius: 10px;
+      padding: 14px 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #0d0d0d;
+      position: relative;
+    }
+
+    .upload-zone:hover {
+      border-color: #D4537E;
+      background: #170e12;
+    }
+
+    .upload-zone.drag-over {
+      border-color: #D4537E;
+      background: #1f1218;
+      transform: scale(1.02);
+    }
+
+    .upload-zone input[type=file] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .upload-icon {
+      font-size: 22px;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .upload-label {
+      font-size: 11px;
+      color: #555;
+      line-height: 1.4;
+    }
+
+    .upload-label strong {
+      color: #D4537E;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .upload-badge {
+      display: none;
+      margin-top: 8px;
+      font-size: 10px;
+      color: #5fc75f;
+      background: #0a1f0a;
+      border: 1px solid #1a4a1a;
+      border-radius: 6px;
+      padding: 4px 10px;
+    }
+
+    .upload-badge.visible {
+      display: inline-block;
+    }
+
+    .upload-reset {
+      display: none;
+      margin-top: 6px;
+      background: none;
+      border: none;
+      color: #555;
+      font-size: 11px;
+      cursor: pointer;
+      font-family: 'Space Grotesk', sans-serif;
+      text-decoration: underline;
+    }
+
+    .upload-reset:hover {
+      color: #f0f0f0;
     }
 
     .vibe-preview-info {
@@ -800,16 +888,27 @@
       </div>
       <div class="vibe-preview-body">
         <div class="vibe-preview-video">
-          <iframe id="vibe-video" src="https://www.youtube.com/embed/RGQa3U5QXWU?autoplay=0&mute=1&loop=1&controls=0&modestbranding=1" allowfullscreen></iframe>
+          <iframe id="vibe-video-yt" src="https://www.youtube.com/embed/RGQa3U5QXWU?autoplay=0&mute=1&loop=1&controls=0&modestbranding=1" allowfullscreen></iframe>
+          <video id="vibe-video-local" controls loop playsinline></video>
         </div>
         <div class="vibe-preview-info">
           <div class="vibe-preview-title" id="vibe-title">Subway Surfers</div>
-          <div class="vibe-preview-desc" id="vibe-desc">Klasyczny gameplay Subway Surfers w tle — idealny do motywacyjnych i edukacyjnych klipów. Najbardziej hypnotyzujący vibe na TikToku.</div>
+          <div class="vibe-preview-desc" id="vibe-desc">Klasyczny gameplay Subway Surfers w tle — idealny do motywacyjnych i edukacyjnych klipów.</div>
           <div class="vibe-preview-tags" id="vibe-tags">
             <span class="vibe-preview-tag">tiktok</span>
             <span class="vibe-preview-tag">gameplay</span>
-            <span class="vibe-preview-tag">brainrot</span>
           </div>
+
+          <div class="upload-zone" id="upload-zone">
+            <input type="file" id="vibe-upload" accept="video/*">
+            <span class="upload-icon">🎥</span>
+            <div class="upload-label">
+              <strong>Wgraj własny film</strong>
+              kliknij lub przeciągnij plik wideo
+            </div>
+            <span class="upload-badge" id="upload-badge">✓ Twój film wgrany</span>
+          </div>
+          <button class="upload-reset" id="upload-reset" onclick="resetVibeVideo()">Powróć do domyślnego</button>
         </div>
       </div>
     </div>
@@ -1017,18 +1116,90 @@
       }
     };
 
+    const customVideos = {};
+    let currentVibe = 'subway';
+
     function updateVibePreview(vibeKey) {
+      currentVibe = vibeKey;
       const data = vibeData[vibeKey];
       if (!data) return;
+      
       const preview = document.getElementById('vibe-preview');
-      document.getElementById('vibe-video').src = data.video;
+      const ytVideo = document.getElementById('vibe-video-yt');
+      const localVideo = document.getElementById('vibe-video-local');
+      const badge = document.getElementById('upload-badge');
+      const resetBtn = document.getElementById('upload-reset');
+      
       document.getElementById('vibe-title').textContent = data.title;
       document.getElementById('vibe-desc').textContent = data.desc;
       document.getElementById('vibe-tags').innerHTML = data.tags.map(t => `<span class="vibe-preview-tag">${t}</span>`).join('');
+      
+      if (customVideos[vibeKey]) {
+        ytVideo.style.display = 'none';
+        ytVideo.src = ''; // stop playing yt
+        localVideo.style.display = 'block';
+        localVideo.src = customVideos[vibeKey];
+        localVideo.play().catch(e => console.log('Autoplay prevented'));
+        badge.classList.add('visible');
+        resetBtn.style.display = 'inline-block';
+      } else {
+        localVideo.style.display = 'none';
+        localVideo.pause();
+        localVideo.src = '';
+        ytVideo.style.display = 'block';
+        ytVideo.src = data.video;
+        badge.classList.remove('visible');
+        resetBtn.style.display = 'none';
+      }
+      
       // Re-trigger animation
       preview.style.animation = 'none';
       preview.offsetHeight;
       preview.style.animation = 'fadeSlideIn 0.3s ease';
+    }
+
+    // Wgrywanie własnych filmów
+    const uploadInput = document.getElementById('vibe-upload');
+    const uploadZone = document.getElementById('upload-zone');
+    
+    uploadInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const url = URL.createObjectURL(file);
+        customVideos[currentVibe] = url;
+        updateVibePreview(currentVibe);
+      }
+    });
+
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadZone.classList.add('drag-over');
+    });
+
+    uploadZone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('drag-over');
+    });
+
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('drag-over');
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        const file = e.dataTransfer.files[0];
+        if (file.type.startsWith('video/')) {
+          const url = URL.createObjectURL(file);
+          customVideos[currentVibe] = url;
+          updateVibePreview(currentVibe);
+        }
+      }
+    });
+
+    function resetVibeVideo() {
+      if (customVideos[currentVibe]) {
+        URL.revokeObjectURL(customVideos[currentVibe]);
+        delete customVideos[currentVibe];
+        updateVibePreview(currentVibe);
+      }
     }
 
     document.querySelectorAll('.vibe-btn').forEach(b => {
