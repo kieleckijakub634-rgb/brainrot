@@ -687,85 +687,77 @@
       display: none;
     }
 
-    .upload-zone {
+    .admin-panel {
+      display: none;
       margin-top: 12px;
-      border: 1.5px dashed #2a2a2a;
-      border-radius: 10px;
-      padding: 14px 12px;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.2s;
-      background: #0d0d0d;
-      position: relative;
-    }
-
-    .upload-zone:hover {
-      border-color: #D4537E;
-      background: #170e12;
-    }
-
-    .upload-zone.drag-over {
-      border-color: #D4537E;
+      padding: 12px;
       background: #1f1218;
-      transform: scale(1.02);
+      border: 1px solid #D4537E;
+      border-radius: 8px;
     }
 
-    .upload-zone input[type=file] {
-      position: absolute;
-      inset: 0;
-      opacity: 0;
-      cursor: pointer;
-      width: 100%;
-      height: 100%;
-    }
-
-    .upload-icon {
-      font-size: 22px;
-      margin-bottom: 6px;
+    .admin-panel.active {
       display: block;
     }
 
-    .upload-label {
+    .admin-panel-label {
       font-size: 11px;
-      color: #555;
-      line-height: 1.4;
-    }
-
-    .upload-label strong {
       color: #D4537E;
-      display: block;
-      margin-bottom: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
-    .upload-badge {
-      display: none;
-      margin-top: 8px;
-      font-size: 10px;
-      color: #5fc75f;
-      background: #0a1f0a;
-      border: 1px solid #1a4a1a;
+    .admin-input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .admin-panel input {
+      flex: 1;
+      background: #111;
+      border: 1px solid #2a2a2a;
       border-radius: 6px;
-      padding: 4px 10px;
-    }
-
-    .upload-badge.visible {
-      display: inline-block;
-    }
-
-    .upload-reset {
-      display: none;
-      margin-top: 6px;
-      background: none;
-      border: none;
-      color: #555;
-      font-size: 11px;
-      cursor: pointer;
-      font-family: 'Space Grotesk', sans-serif;
-      text-decoration: underline;
-    }
-
-    .upload-reset:hover {
+      padding: 8px 12px;
       color: #f0f0f0;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 12px;
+      outline: none;
+    }
+
+    .admin-panel input:focus {
+      border-color: #D4537E;
+    }
+
+    .admin-panel button {
+      background: #D4537E;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 0 16px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .admin-panel button:hover {
+      background: #c04470;
+    }
+
+    .nav-badge-admin {
+      display: none;
+      background: #D4537E;
+      color: #fff;
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 100px;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.05em;
     }
 
     .vibe-preview-info {
@@ -843,10 +835,11 @@
       &nbsp;&bull;&nbsp; OHIO APPROVED &nbsp;&bull;&nbsp; ABSOLUTE W &nbsp;&bull;&nbsp;</span>
   </div>
 
-  <!-- NAV -->
+    <!-- NAV -->
   <nav>
     <div class="nav-logo">Brainrot<span>AI</span></div>
     <div class="nav-right">
+      <span class="nav-badge-admin" id="nav-badge-admin">Admin</span>
       <span class="nav-user" id="nav-user"></span>
       <button class="btn-login" id="btn-login-nav" onclick="openModal()">Zaloguj się</button>
       <button class="btn-logout" id="btn-logout" style="display:none" onclick="doLogout()">Wyloguj</button>
@@ -899,16 +892,15 @@
             <span class="vibe-preview-tag">gameplay</span>
           </div>
 
-          <div class="upload-zone" id="upload-zone">
-            <input type="file" id="vibe-upload" accept="video/*">
-            <span class="upload-icon">🎥</span>
-            <div class="upload-label">
-              <strong>Wgraj własny film</strong>
-              kliknij lub przeciągnij plik wideo
+          <!-- ADMIN PANEL -->
+          <div class="admin-panel" id="admin-panel">
+            <div class="admin-panel-label">⚙️ Zmień szablon (Tylko Admin)</div>
+            <div class="admin-input-row">
+              <input type="text" id="admin-yt-link" placeholder="Wklej link YouTube (np. https://youtu.be/...)">
+              <button onclick="saveAdminTemplate()">Zapisz</button>
             </div>
-            <span class="upload-badge" id="upload-badge">✓ Twój film wgrany</span>
           </div>
-          <button class="upload-reset" id="upload-reset" onclick="resetVibeVideo()">Powróć do domyślnego</button>
+
         </div>
       </div>
     </div>
@@ -1026,10 +1018,13 @@
     // AUTH
     // =====================
     let currentUser = null;
+    const ADMIN_EMAIL = 'kieleckijakub634@gmail.com';
 
     sb.auth.onAuthStateChange((event, session) => {
       currentUser = session ? session.user : null;
       updateNavUI();
+      // Odśwież widok kreatora, aby pokazać/ukryć panel admina
+      if(currentVibe) updateVibePreview(currentVibe);
     });
 
     function updateNavUI() {
@@ -1037,17 +1032,25 @@
       const btnLogin = document.getElementById('btn-login-nav');
       const btnLogout = document.getElementById('btn-logout');
       const limitInfo = document.getElementById('limit-info');
+      const badgeAdmin = document.getElementById('nav-badge-admin');
 
       if (currentUser) {
         navUser.textContent = currentUser.email;
         btnLogin.style.display = 'none';
         btnLogout.style.display = 'inline';
         limitInfo.innerHTML = 'Plan: <span>Basic</span> — 0/10 filmów wykorzystanych';
+        
+        if (currentUser.email === ADMIN_EMAIL) {
+          badgeAdmin.style.display = 'inline-block';
+        } else {
+          badgeAdmin.style.display = 'none';
+        }
       } else {
         navUser.textContent = '';
         btnLogin.style.display = 'inline';
         btnLogout.style.display = 'none';
         limitInfo.textContent = '';
+        badgeAdmin.style.display = 'none';
       }
     }
 
@@ -1116,8 +1119,54 @@
       }
     };
 
-    const customVideos = {};
     let currentVibe = 'subway';
+
+    // Ładowanie zapisanych szablonów (na razie z localStorage)
+    function loadCustomTemplates() {
+      try {
+        const saved = localStorage.getItem('brainrot_admin_templates');
+        if (saved) {
+          const custom = JSON.parse(saved);
+          for (let k in custom) {
+            if (vibeData[k]) vibeData[k].video = custom[k];
+          }
+        }
+      } catch (e) {}
+    }
+    loadCustomTemplates();
+
+    function extractYoutubeId(url) {
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+      const match = url.match(regExp);
+      return (match && match[2].length === 11) ? match[2] : null;
+    }
+
+    function saveAdminTemplate() {
+      const input = document.getElementById('admin-yt-link');
+      const val = input.value.trim();
+      if (!val) return;
+      
+      const videoId = extractYoutubeId(val);
+      if (!videoId) {
+        alert("Niepoprawny link do YouTube!");
+        return;
+      }
+      
+      const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&mute=1&loop=1&controls=0&modestbranding=1`;
+      vibeData[currentVibe].video = embedUrl;
+      
+      // Zapisz do local storage
+      let custom = {};
+      try {
+        custom = JSON.parse(localStorage.getItem('brainrot_admin_templates') || '{}');
+      } catch(e) {}
+      custom[currentVibe] = embedUrl;
+      localStorage.setItem('brainrot_admin_templates', JSON.stringify(custom));
+      
+      input.value = '';
+      updateVibePreview(currentVibe);
+      alert("Szablon zaktualizowany! (Zapisano w przeglądarce)");
+    }
 
     function updateVibePreview(vibeKey) {
       currentVibe = vibeKey;
@@ -1127,79 +1176,28 @@
       const preview = document.getElementById('vibe-preview');
       const ytVideo = document.getElementById('vibe-video-yt');
       const localVideo = document.getElementById('vibe-video-local');
-      const badge = document.getElementById('upload-badge');
-      const resetBtn = document.getElementById('upload-reset');
+      const adminPanel = document.getElementById('admin-panel');
       
       document.getElementById('vibe-title').textContent = data.title;
       document.getElementById('vibe-desc').textContent = data.desc;
       document.getElementById('vibe-tags').innerHTML = data.tags.map(t => `<span class="vibe-preview-tag">${t}</span>`).join('');
       
-      if (customVideos[vibeKey]) {
-        ytVideo.style.display = 'none';
-        ytVideo.src = ''; // stop playing yt
-        localVideo.style.display = 'block';
-        localVideo.src = customVideos[vibeKey];
-        localVideo.play().catch(e => console.log('Autoplay prevented'));
-        badge.classList.add('visible');
-        resetBtn.style.display = 'inline-block';
+      localVideo.style.display = 'none';
+      localVideo.pause();
+      localVideo.src = '';
+      ytVideo.style.display = 'block';
+      ytVideo.src = data.video;
+      
+      if (currentUser && currentUser.email === ADMIN_EMAIL) {
+        adminPanel.classList.add('active');
       } else {
-        localVideo.style.display = 'none';
-        localVideo.pause();
-        localVideo.src = '';
-        ytVideo.style.display = 'block';
-        ytVideo.src = data.video;
-        badge.classList.remove('visible');
-        resetBtn.style.display = 'none';
+        adminPanel.classList.remove('active');
       }
       
       // Re-trigger animation
       preview.style.animation = 'none';
       preview.offsetHeight;
       preview.style.animation = 'fadeSlideIn 0.3s ease';
-    }
-
-    // Wgrywanie własnych filmów
-    const uploadInput = document.getElementById('vibe-upload');
-    const uploadZone = document.getElementById('upload-zone');
-    
-    uploadInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const url = URL.createObjectURL(file);
-        customVideos[currentVibe] = url;
-        updateVibePreview(currentVibe);
-      }
-    });
-
-    uploadZone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      uploadZone.classList.add('drag-over');
-    });
-
-    uploadZone.addEventListener('dragleave', (e) => {
-      e.preventDefault();
-      uploadZone.classList.remove('drag-over');
-    });
-
-    uploadZone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      uploadZone.classList.remove('drag-over');
-      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        const file = e.dataTransfer.files[0];
-        if (file.type.startsWith('video/')) {
-          const url = URL.createObjectURL(file);
-          customVideos[currentVibe] = url;
-          updateVibePreview(currentVibe);
-        }
-      }
-    });
-
-    function resetVibeVideo() {
-      if (customVideos[currentVibe]) {
-        URL.revokeObjectURL(customVideos[currentVibe]);
-        delete customVideos[currentVibe];
-        updateVibePreview(currentVibe);
-      }
     }
 
     document.querySelectorAll('.vibe-btn').forEach(b => {
