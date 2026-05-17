@@ -760,6 +760,120 @@
       letter-spacing: 0.05em;
     }
 
+    /* RESULT MODAL */
+    .result-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    .result-modal.active {
+      display: flex;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .result-container {
+      width: 100%;
+      max-width: 420px;
+      height: 85vh;
+      max-height: 850px;
+      position: relative;
+      border-radius: 20px;
+      overflow: hidden;
+      background: #111;
+      box-shadow: 0 0 40px rgba(212, 83, 126, 0.2);
+    }
+    .result-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+    }
+    .result-captions {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      text-align: center;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      color: #fff;
+      text-transform: uppercase;
+      line-height: 1.1;
+      text-shadow: 
+        -3px -3px 0 #000,
+         3px -3px 0 #000,
+        -3px  3px 0 #000,
+         3px  3px 0 #000,
+         0px  4px 15px rgba(0,0,0,0.8);
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .result-word {
+      opacity: 0;
+      transform: scale(0.8);
+      transition: all 0.05s ease-out;
+      display: none;
+    }
+    .result-word.active {
+      opacity: 1;
+      transform: scale(1.1);
+      display: inline-block;
+      color: #FFD700;
+    }
+    .result-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      border: 1px solid #333;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      transition: background 0.2s;
+    }
+    .result-close:hover {
+      background: #D4537E;
+    }
+    .play-result-btn {
+      display: none;
+      width: 100%;
+      padding: 16px;
+      background: #5fc75f;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      margin-top: 16px;
+      animation: pulse-green 2s infinite;
+    }
+    @keyframes pulse-green {
+      0% { box-shadow: 0 0 0 0 rgba(95, 199, 95, 0.4); }
+      70% { box-shadow: 0 0 0 15px rgba(95, 199, 95, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(95, 199, 95, 0); }
+    }
+
     .vibe-preview-info {
       flex: 1;
       display: flex;
@@ -950,6 +1064,8 @@
       </div>
       <div class="progress-label" id="prog-label">Inicjalizowanie AI...</div>
     </div>
+    <button class="play-result-btn" id="play-result-btn" onclick="showResult()">ZOBACZ GOTOWY FILM 🎬</button>
+    
     <div class="limit-info" id="limit-info"></div>
   </div>
 
@@ -1003,6 +1119,15 @@
   </section>
 
   <footer>no cap, no L, only W &nbsp;&bull;&nbsp; kontakt@brainrotai.pl</footer>
+
+  <!-- RESULT MODAL -->
+  <div class="result-modal" id="result-modal">
+    <div class="result-container">
+      <button class="result-close" onclick="closeResult()">✕</button>
+      <div id="result-video-wrapper" style="width:100%; height:100%;"></div>
+      <div class="result-captions" id="result-captions"></div>
+    </div>
+  </div>
 
   <script>
     // =====================
@@ -1216,16 +1341,27 @@
       gaming: 'najlepsze gry wszech czasów ranked tier list...'
     };
 
+    const stories = {
+      motivacja: "Pamiętaj sigma grindset to nie tylko pieniądze to stan umysłu. Kiedy inni śpią ty robisz formę. Kiedy inni scrollują tiktoka ty budujesz imperium. Bądź jak Patrick Bateman tylko w prawdziwym życiu. W rizz na zawsze.",
+      historia: "Czy wiesz że w starożytnym Rzymie mieli prawdziwy brainrot? Cesarz Kaligula mianował swojego konia senatorem. To jest definicja absolute cinema. Wyobraź sobie że twój szef to dosłownie koń. Zero cap.",
+      hack: "Słuchaj tego life hacka. Jeśli chcesz mieć nieskończony rizz wystarczy że przestaniesz mrugać. Utrzymuj kontakt wzrokowy jak prawdziwy drapieżnik. To się nazywa mewing na najwyższym poziomie. Działa w stu procentach.",
+      nauka: "Fizyka kwantowa jest dosłownie jak gra w chowanego. Elektron nie ma pojęcia gdzie jest dopóki na niego nie spojrzysz. To jest tak zwany efekt obserwatora. Kosmos to po prostu jeden wielki symulator. Mind blown.",
+      gaming: "Najlepsza gra w historii to bez dyskusji Minecraft. Ten moment kiedy znajdujesz pierwsze diamenty to czysta dopamina. Zbudowanie pierwszego dirt house to core memory każdego gracza. Fortnite może się schować. W."
+    };
+
+    let currentTopic = 'motivacja';
+
     document.querySelectorAll('.topic-chip').forEach(c => {
       c.onclick = () => {
         document.querySelectorAll('.topic-chip').forEach(x => x.classList.remove('active'));
         c.classList.add('active');
-        if (prompts[c.dataset.t]) document.getElementById('prompt').value = prompts[c.dataset.t];
+        currentTopic = c.dataset.t;
+        if (prompts[currentTopic]) document.getElementById('prompt').value = prompts[currentTopic];
       };
     });
 
     // =====================
-    // GENEROWANIE
+    // GENEROWANIE I WYNIK
     // =====================
     const steps = ['Inicjalizowanie AI...', 'Analizowanie vibu...', 'Piszemy skrypt...', 'Generujemy narrację...', 'Dodajemy gameplay...', 'Synchronizacja dźwięku...', 'Finalizowanie...', 'Gotowe! W rizz!'];
 
@@ -1242,20 +1378,101 @@
       const prog = document.getElementById('prog');
       const fill = document.getElementById('prog-fill');
       const lbl = document.getElementById('prog-label');
+      const playBtn = document.getElementById('play-result-btn');
+      
       btn.disabled = true;
+      playBtn.style.display = 'none';
       prog.style.display = 'block';
+      
       let i = 0;
       const interval = setInterval(() => {
         if (i >= steps.length) {
           clearInterval(interval);
-          btn.disabled = false;
-          btn.textContent = 'GENERUJ KOLEJNY';
+          prog.style.display = 'none';
+          playBtn.style.display = 'block';
           return;
         }
         fill.style.width = Math.round((i + 1) / steps.length * 100) + '%';
         lbl.textContent = steps[i];
         i++;
       }, 700);
+    }
+
+    let synth = window.speechSynthesis;
+    let currentUtterance = null;
+
+    function showResult() {
+      const data = vibeData[currentVibe];
+      const wrapper = document.getElementById('result-video-wrapper');
+      
+      let videoHtml = '';
+      if (data.video.includes('youtube.com')) {
+         let vUrl = data.video.replace('autoplay=0', 'autoplay=1').replace('mute=1', 'mute=1'); 
+         // Wymuszamy wyciszenie tła, aby było słychać lektora
+         if(!vUrl.includes('autoplay=1')) vUrl += '&autoplay=1';
+         videoHtml = `<iframe class="result-video" src="${vUrl}" allow="autoplay" allowfullscreen></iframe>`;
+      } else {
+         videoHtml = `<video class="result-video" src="${data.video}" autoplay loop muted playsinline></video>`;
+      }
+      wrapper.innerHTML = videoHtml;
+      
+      document.getElementById('result-modal').classList.add('active');
+      
+      startTTS();
+    }
+
+    function startTTS() {
+      if (synth.speaking) {
+        synth.cancel();
+      }
+      
+      const text = stories[currentTopic] || stories['motivacja'];
+      const words = text.split(' ');
+      
+      currentUtterance = new SpeechSynthesisUtterance(text);
+      currentUtterance.lang = 'pl-PL';
+      currentUtterance.rate = 1.1; 
+      currentUtterance.pitch = 1.0;
+
+      const captionsBox = document.getElementById('result-captions');
+      captionsBox.innerHTML = '';
+      
+      let wordSpans = words.map(w => {
+         let span = document.createElement('span');
+         span.className = 'result-word';
+         span.textContent = w.toUpperCase();
+         captionsBox.appendChild(span);
+         return span;
+      });
+
+      let currentWordIndex = 0;
+
+      currentUtterance.onboundary = (event) => {
+        if (event.name === 'word') {
+          wordSpans.forEach(s => s.classList.remove('active'));
+          if (currentWordIndex < wordSpans.length) {
+             wordSpans[currentWordIndex].classList.add('active');
+             currentWordIndex++;
+          }
+        }
+      };
+      
+      currentUtterance.onend = () => {
+         wordSpans.forEach(s => s.classList.remove('active'));
+      };
+
+      synth.speak(currentUtterance);
+    }
+
+    function closeResult() {
+      document.getElementById('result-modal').classList.remove('active');
+      document.getElementById('result-video-wrapper').innerHTML = '';
+      if (synth) synth.cancel();
+      
+      document.getElementById('play-result-btn').style.display = 'none';
+      const btn = document.getElementById('gen-btn');
+      btn.disabled = false;
+      btn.textContent = 'GENERUJ KOLEJNY';
     }
   </script>
 </body>
