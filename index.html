@@ -610,6 +610,123 @@
       color: #333;
       border-top: 1px solid #161616
     }
+
+    /* VIDEO PREVIEW */
+    .vibe-preview {
+      margin-top: 16px;
+      margin-bottom: 20px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #0d0d0d;
+      border: 1px solid #222;
+      animation: fadeSlideIn 0.3s ease;
+    }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .vibe-preview-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: #141414;
+      border-bottom: 1px solid #1e1e1e;
+    }
+
+    .vibe-preview-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #D4537E;
+      animation: pulse-dot 2s ease infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .vibe-preview-header span {
+      font-size: 11px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .vibe-preview-body {
+      display: flex;
+      gap: 14px;
+      padding: 14px;
+      align-items: flex-start;
+    }
+
+    .vibe-preview-video {
+      width: 180px;
+      height: 320px;
+      border-radius: 10px;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: #000;
+      border: 1px solid #2a2a2a;
+      position: relative;
+    }
+
+    .vibe-preview-video iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .vibe-preview-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .vibe-preview-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      color: #f0f0f0;
+    }
+
+    .vibe-preview-desc {
+      font-size: 12px;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    .vibe-preview-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .vibe-preview-tag {
+      font-size: 10px;
+      padding: 3px 10px;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 100px;
+      color: #D4537E;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    @media (max-width: 520px) {
+      .vibe-preview-body {
+        flex-direction: column;
+        align-items: center;
+      }
+      .vibe-preview-video {
+        width: 100%;
+        max-width: 220px;
+      }
+    }
   </style>
 </head>
 
@@ -674,6 +791,29 @@
       <div class="vibe-btn" data-v="skibidi"><span class="vibe-icon">🚽</span><span class="vibe-name">Skibidi</span>
       </div>
     </div>
+
+    <!-- VIBE VIDEO PREVIEW -->
+    <div class="vibe-preview" id="vibe-preview">
+      <div class="vibe-preview-header">
+        <div class="vibe-preview-dot"></div>
+        <span>Podgląd template</span>
+      </div>
+      <div class="vibe-preview-body">
+        <div class="vibe-preview-video">
+          <iframe id="vibe-video" src="https://www.youtube.com/embed/RGQa3U5QXWU?autoplay=0&mute=1&loop=1&controls=0&modestbranding=1" allowfullscreen></iframe>
+        </div>
+        <div class="vibe-preview-info">
+          <div class="vibe-preview-title" id="vibe-title">Subway Surfers</div>
+          <div class="vibe-preview-desc" id="vibe-desc">Klasyczny gameplay Subway Surfers w tle — idealny do motywacyjnych i edukacyjnych klipów. Najbardziej hypnotyzujący vibe na TikToku.</div>
+          <div class="vibe-preview-tags" id="vibe-tags">
+            <span class="vibe-preview-tag">tiktok</span>
+            <span class="vibe-preview-tag">gameplay</span>
+            <span class="vibe-preview-tag">brainrot</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
 
     <div class="step-row">
       <div class="step-num">2</div><span class="step-label">Wybierz temat</span>
@@ -837,10 +977,65 @@
     // =====================
     // VIBY I TEMATY
     // =====================
+    // Vibe video data
+    const vibeData = {
+      subway: {
+        video: 'https://www.youtube.com/embed/RGQa3U5QXWU?autoplay=0&mute=1&loop=1&controls=0&modestbranding=1',
+        title: 'Subway Surfers',
+        desc: 'Klasyczny gameplay Subway Surfers w tle — idealny do motywacyjnych i edukacyjnych klipów. Najbardziej hypnotyzujący vibe na TikToku.',
+        tags: ['tiktok', 'gameplay', 'brainrot']
+      },
+      minecraft: {
+        video: 'https://www.youtube.com/embed/MmB9b5njVbA?autoplay=0&mute=1&loop=1&controls=0&modestbranding=1',
+        title: 'Minecraft Parkour',
+        desc: 'Minecraft parkour w tle — satisfying vibes. Idealny do storytellingu i ciekawostek. Klasyka brainrot contentu.',
+        tags: ['minecraft', 'parkour', 'satisfying']
+      },
+      rizzler: {
+        video: 'https://www.youtube.com/embed/ck4RGbsSE7Q?autoplay=0&mute=1&loop=1&controls=0&modestbranding=1',
+        title: 'Rizzler Mode',
+        desc: 'Kompilacje z rizz momentami — idealne do porad randkowych i sigma male contentu. Maximum charisma.',
+        tags: ['rizz', 'sigma', 'charisma']
+      },
+      ohio: {
+        video: 'https://www.youtube.com/embed/dFuwq1ggs6E?autoplay=0&mute=1&loop=1&controls=0&modestbranding=1',
+        title: 'Only in Ohio',
+        desc: 'Surrealistyczne i dziwne klipy w stylu "Only in Ohio" — chaos mode. Do memów i absurdalnego contentu.',
+        tags: ['ohio', 'cursed', 'meme']
+      },
+      sigma: {
+        video: 'https://www.youtube.com/embed/SJgkSJlCamg?autoplay=0&mute=1&loop=1&controls=0&modestbranding=1',
+        title: 'Sigma Grind',
+        desc: 'Sceny z sigma grindset — Patrick Bateman, Shelby, Kratos. Do motywacyjnych filmów z cytatami wielkich ludzi.',
+        tags: ['sigma', 'grindset', 'motivacja']
+      },
+      skibidi: {
+        video: 'https://www.youtube.com/embed/Wm4KoEVCSgo?autoplay=0&mute=1&loop=1&controls=0&modestbranding=1',
+        title: 'Skibidi Toilet',
+        desc: 'Skibidi Toilet — najpopularniejsza seria na YouTube. Do Gen Alpha contentu i absolutnego brainrotu.',
+        tags: ['skibidi', 'gen-alpha', 'viral']
+      }
+    };
+
+    function updateVibePreview(vibeKey) {
+      const data = vibeData[vibeKey];
+      if (!data) return;
+      const preview = document.getElementById('vibe-preview');
+      document.getElementById('vibe-video').src = data.video;
+      document.getElementById('vibe-title').textContent = data.title;
+      document.getElementById('vibe-desc').textContent = data.desc;
+      document.getElementById('vibe-tags').innerHTML = data.tags.map(t => `<span class="vibe-preview-tag">${t}</span>`).join('');
+      // Re-trigger animation
+      preview.style.animation = 'none';
+      preview.offsetHeight;
+      preview.style.animation = 'fadeSlideIn 0.3s ease';
+    }
+
     document.querySelectorAll('.vibe-btn').forEach(b => {
       b.onclick = () => {
         document.querySelectorAll('.vibe-btn').forEach(x => x.classList.remove('active'));
         b.classList.add('active');
+        updateVibePreview(b.dataset.v);
       };
     });
 
